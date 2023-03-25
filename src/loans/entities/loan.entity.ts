@@ -18,6 +18,12 @@ export class Loan {
   @Column()
   duration: number; // in days
 
+  @Column({ nullable: true })
+  repaymentDate: Date;
+
+  @Column({ nullable: true })
+  amountPaid: number;
+
   @Column({
     type: 'enum',
     enum: LoanStatusEnum

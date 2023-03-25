@@ -27,6 +27,6 @@ import { PaymentsModule } from './payments/payments.module';
     UsersModule,
     LoansModule,
     PaymentsModule
-  ],
+  ]
 })
 export class AppModule {}
