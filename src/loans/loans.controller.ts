@@ -6,12 +6,11 @@ import {
     Req,
     UseGuards,
     Param,
-    Catch,
     UseFilters
 } from '@nestjs/common';
 import { JwtGuard } from 'src/auth/guard';
 import { EntityNotFoundFilter } from 'src/exceptions/404.exception';
-import { LoanDto } from './dto';
+import { LoanDto, RepaymentAmountDto } from './dto';
 import { LoansService } from './loans.service';
 
 @UseFilters(EntityNotFoundFilter)
@@ -23,6 +22,7 @@ export class LoansController {
         private loanService: LoansService
     ){}
 
+    @Get('')
     getAllLoansForUser(@Req() req){
         // this api should support pagination
         // and filtering
@@ -40,8 +40,8 @@ export class LoansController {
     }
 
     @Post('/:id/repay')
-    repayLoan(@Req() req, @Param('id') id:string){
-        return this.loanService.repayLoan(id, req.user);      
+    repayLoan(@Req() req, @Param('id') id:string, @Body() dto: RepaymentAmountDto){
+        return this.loanService.repayLoan(id, dto.amount, req.user);      
     }
 
 }

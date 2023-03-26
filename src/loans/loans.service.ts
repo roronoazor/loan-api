@@ -5,14 +5,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Loan } from './entities/loan.entity';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { LoanStatusEnum } from './enums/loanStatus.enum';
-import { In } from "typeorm";
+import { In, DataSource } from "typeorm";
+import { Payment, PaymentType } from 'src/payments/entities/payments.entity';
+
 
 @Injectable()
 export class LoansService {
 
     constructor(
         @InjectRepository(Loan)
-        private loanRepository: Repository<Loan>
+        private loanRepository: Repository<Loan>,
+        private connection: DataSource
     ){}
 
     async findOpenOrDisbursedLoans(user: User) {
@@ -32,22 +35,42 @@ export class LoansService {
             throw new HttpException('Please repay all active loans before applying', HttpStatus.BAD_REQUEST);
         }
 
-        const disbursedLoan = await this.loanRepository.save({
+        const queryRunner = this.connection.createQueryRunner();
+
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+    
+        try {
+          const loan = await this.loanRepository.create({
             ...dto,
-            // the interest should probably come from some config 
-            // table defined in the database and should 
-            // probably be a float
-            interestRate: 5,   
-            // by default we approve all loans and immediately 
-            // disburse them, but there should be some logic
-            // to assess if the user is qualified for this loan
+            interestRate: 5,
             status: LoanStatusEnum.DISBURSED,
             user,
             createdBy: user.email,
-            lastUpdatedBy: user.email
-        })
-
-        return this.appendLoanDetails(disbursedLoan);
+            lastUpdatedBy: user.email,
+          });
+          await queryRunner.manager.save(loan);
+    
+          const payment = await queryRunner.manager.create(Payment, {
+            amount: dto.amount,
+            paymentDate: new Date(),
+            type: PaymentType.DEBIT,
+            user,
+            loan,
+            createdBy: user.email,
+            lastUpdatedBy: user.email,
+          });
+          await queryRunner.manager.save(payment);
+    
+          await queryRunner.commitTransaction();
+    
+          return this.appendLoanDetails(loan);
+        } catch (err) {
+          await queryRunner.rollbackTransaction();
+          throw err;
+        } finally {
+          await queryRunner.release();
+        }
     }
 
     async appendLoanDetails(loan :Loan){
@@ -85,47 +108,97 @@ export class LoansService {
         return { message: 'success', data: { loan: approvedLoan } }
     }
 
-    async repayLoan(loanId: string, user: User) {
-        
-        let loan = await this.loanRepository.findOne({
-            where: { id: loanId }
-        });
-
-        if (!loan){
+    async repayLoan(loanId: string, paymentAmount: number, user: User) {
+        const queryRunner = this.connection.createQueryRunner();
+      
+        try {
+          await queryRunner.connect();
+          await queryRunner.startTransaction();
+      
+          let loan = await queryRunner.manager.findOne(Loan, {
+            where: { id: loanId },
+            relations: ['payments', 'user'],
+          });
+      
+          if (!loan) {
             throw new EntityNotFoundError(Loan, loanId);
-        }
-        
-        // ensure that the user who took the loan is the 
-        // same person repaying the loan
-        if (user?.id != loan?.user?.id){
-            throw new HttpException('Not authorized', HttpStatus.BAD_REQUEST)
-        }
+          }
+      
+          if (user?.id !== loan?.user?.id) {
+            throw new HttpException('Not authorized', HttpStatus.BAD_REQUEST);
+          }
+      
+          // Calculate the total payment made towards the loan
+          const totalPayment = loan.payments.reduce((acc, payment) => {
+            if (payment.type === 'credit') {
+              return acc + payment.amount;
+            } else {
+              return acc - payment.amount;
+            }
+          }, 0);
 
-        // if the loan has is disburse mode, 
-        // settle the loan and create a payment record
-        if (loan.status == LoanStatusEnum.DISBURSED){
-            
+          
+      
+          // Calculate the expected payment based on the interest rate
+          const expectedPayment = loan.amount * loan.interestRate;
+          
+
+          // Check if the payment amount plus the total payment is equal to the expected payment
+          if (paymentAmount + totalPayment >= expectedPayment) {
+            // Update the loan status to SETTLED
             loan.status = LoanStatusEnum.SETTLED;
-            loan.repaymentDate = new Date();
-            loan.amountPaid = loan.amount * loan.interestRate; 
-            const settledLoan = await this.loanRepository.save(loan);
-            return { message: 'success', data : { loan: settledLoan } }
+            loan.amountPaid = paymentAmount;
+          }
+      
+          // Create a new payment record
+          const payment = new Payment();
+          payment.amount = paymentAmount;
+          payment.paymentDate = new Date();
+          payment.type = PaymentType.CREDIT;
+          payment.user = user;
+          payment.createdBy = user.email;
+          payment.lastUpdatedBy = user.email;
+          payment.loan = loan;
+          
+          // Save the payment and loan records
+          await queryRunner.manager.save(loan);
+          await queryRunner.manager.save(payment);
+          
+      
+          await queryRunner.commitTransaction();
+          return { message: 'success', data: { loan } };
+        } catch (err) {
+          await queryRunner.rollbackTransaction();
+          throw err;
+        } finally {
+          await queryRunner.release();
         }
-        // if the loan has not been disbursed no need to settle it
-        // raise an error or just return the loan details
-        return { message: 'success', data : { loan } }
-    }
+      }
+      
 
-
-    async getLoansByUser(userId: string) { 
-        const loans = await this.loanRepository.find({
+    async getLoansByUser(userId: string, page: number = 1, perPage: number = 10) { 
+        const [loans, totalCount] = await this.loanRepository.findAndCount({
           where: {
             user : { id: userId },
           },
           order: {
             createdOn: 'DESC',
           },
+          skip: (page - 1) * perPage,
+          take: perPage,
         });
-        return { message: 'success', data: { loans } }
+
+        return {
+          message: 'success',
+          data: {
+            loans,
+            pagination: {
+              currentPage: page,
+              perPage,
+              totalPages: Math.ceil(totalCount / perPage),
+              totalCount,
+            },
+          },
+        };
       }
 }

@@ -1,11 +1,15 @@
-// payment.entity.ts
-
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Loan } from '../../loans/entities/loan.entity';
+
+export enum PaymentType {
+  CREDIT = 'credit',
+  DEBIT = 'debit'
+}
 
 @Entity()
 export class Payment {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
@@ -14,8 +18,12 @@ export class Payment {
   @Column()
   paymentDate: Date;
 
-  @Column()
-  type: 'credit' | 'debit';
+  @Column({
+    type: 'enum',
+    enum: PaymentType,
+    default: PaymentType.DEBIT
+  })
+  type: PaymentType;
 
   @Column()
   createdBy: string;
@@ -31,4 +39,7 @@ export class Payment {
 
   @ManyToOne(() => User, (user) => user.payments)
   user: User;
+
+  @ManyToOne(() => Loan, (loan) => loan.payments)
+  loan: Loan;
 }

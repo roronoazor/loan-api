@@ -1,8 +1,9 @@
 // loan.entity.ts
 
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { LoanStatusEnum } from '../enums/loanStatus.enum';
+import { Payment } from '../../payments/entities/payments.entity';
 
 @Entity()
 export class Loan {
@@ -44,4 +45,7 @@ export class Loan {
 
   @ManyToOne(() => User, (user) => user.loans)
   user: User;
+
+  @OneToMany(() => Payment, (payment)=>payment.loan)
+  payments: Payment[];
 }
