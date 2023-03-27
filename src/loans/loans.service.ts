@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Loan } from './entities/loan.entity';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { LoanStatusEnum } from './enums/loanStatus.enum';
-import { In } from "typeorm";
+import { In, DataSource } from "typeorm";
 import { Payment, PaymentType } from '../payments/entities/payments.entity';
 
 
@@ -14,7 +14,8 @@ export class LoansService {
 
     constructor(
         @InjectRepository(Loan)
-        private loanRepository: Repository<Loan>
+        private loanRepository: Repository<Loan>,
+        private connection: DataSource
     ){}
 
     async findOpenOrDisbursedLoans(user: User) {
