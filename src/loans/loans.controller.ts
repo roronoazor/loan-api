@@ -12,8 +12,9 @@ import { JwtGuard } from '../auth/guard';
 import { EntityNotFoundFilter } from '../exceptions/404.exception';
 import { LoanDto, RepaymentAmountDto } from './dto';
 import { LoansService } from './loans.service';
-import { ApiBody, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @ApiTags('loans')
 @UseFilters(EntityNotFoundFilter)
 @UseGuards(JwtGuard)

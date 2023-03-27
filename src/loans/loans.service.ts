@@ -30,10 +30,10 @@ export class LoansService {
 
     async applyForLoan(dto: LoanDto, user: User){
 
-        const activeLoans = await this.findOpenOrDisbursedLoans(user);
-        if (activeLoans.length > 0){
-            throw new HttpException('Please repay all active loans before applying', HttpStatus.BAD_REQUEST);
-        }
+        // const activeLoans = await this.findOpenOrDisbursedLoans(user);
+        // if (activeLoans.length > 0){
+        //     throw new HttpException('Please repay all active loans before applying', HttpStatus.BAD_REQUEST);
+        // }
 
         const queryRunner = this.connection.createQueryRunner();
 
@@ -64,7 +64,7 @@ export class LoansService {
     
           await queryRunner.commitTransaction();
     
-          return this.appendLoanDetails(loan);
+        return { message: 'success', data : { loan : await this.appendLoanDetails(loan) } }
         } catch (err) {
           await queryRunner.rollbackTransaction();
           throw err;
@@ -177,7 +177,7 @@ export class LoansService {
       
 
     async getLoansByUser(userId: string, page: number = 1, perPage: number = 10) { 
-        const [loans, totalCount] = await this.loanRepository.findAndCount({
+        let [loans, totalCount] = await this.loanRepository.findAndCount({
           where: {
             user : { id: userId },
           },
@@ -187,7 +187,7 @@ export class LoansService {
           skip: (page - 1) * perPage,
           take: perPage,
         });
-
+        
         return {
           message: 'success',
           data: {

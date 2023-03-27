@@ -4,6 +4,7 @@ import { UserProfile } from '../entities/userProfile.entity';
 import { BankAccount } from '../../payments/entities/bankAccount.entity';
 import { BankCard } from '../../payments/entities/bankCard.entity';
 import { Payment } from '../../payments/entities/payments.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -20,6 +21,7 @@ export class User {
   email: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column({
@@ -34,14 +36,18 @@ export class User {
 
   
   @Column()
+  @Exclude()
   createdBy: string;
 
+  @Exclude()
   @CreateDateColumn()
   createdOn: Date;
 
+  @Exclude()
   @Column()
   lastUpdatedBy: string;
 
+  @Exclude()
   @UpdateDateColumn()
   lastUpdatedOn: Date;
 
@@ -60,4 +66,5 @@ export class User {
 
   @OneToMany(() => Loan, (loan) => loan.user)
     loans: Loan[]
+
 }
