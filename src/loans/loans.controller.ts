@@ -8,8 +8,8 @@ import {
     Param,
     UseFilters
 } from '@nestjs/common';
-import { JwtGuard } from 'src/auth/guard';
-import { EntityNotFoundFilter } from 'src/exceptions/404.exception';
+import { JwtGuard } from '../auth/guard';
+import { EntityNotFoundFilter } from '../exceptions/404.exception';
 import { LoanDto, RepaymentAmountDto } from './dto';
 import { LoansService } from './loans.service';
 import { ApiBody, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';

@@ -6,7 +6,7 @@ import { Loan } from './entities/loan.entity';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { LoanStatusEnum } from './enums/loanStatus.enum';
 import { In, DataSource } from "typeorm";
-import { Payment, PaymentType } from 'src/payments/entities/payments.entity';
+import { Payment, PaymentType } from '../payments/entities/payments.entity';
 
 
 @Injectable()
