@@ -4,6 +4,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, Up
 import { User } from '../../users/entities/user.entity';
 import { LoanStatusEnum } from '../enums/loanStatus.enum';
 import { Payment } from '../../payments/entities/payments.entity';
+import { Exclude, Expose } from 'class-transformer';
 
 @Entity()
 export class Loan {
@@ -31,15 +32,19 @@ export class Loan {
   })
   status: LoanStatusEnum
 
+  @Exclude()
   @Column()
   createdBy: string;
 
+  @Exclude()
   @CreateDateColumn()
   createdOn: Date;
 
+  @Exclude()
   @Column()
   lastUpdatedBy: string;
 
+  @Exclude()
   @UpdateDateColumn()
   lastUpdatedOn: Date;
 
@@ -48,4 +53,16 @@ export class Loan {
 
   @OneToMany(() => Payment, (payment)=>payment.loan)
   payments: Payment[];
+
+  @Expose()
+  get repaymentAmount(): number {
+    return this.amount * this.interestRate;
+  }
+
+  @Expose()
+  get dueDate(): Date {
+    const dueDate = new Date(this.createdOn.getTime() + (this.duration * 24 * 60 * 60 * 1000));
+    return dueDate;
+  }
+
 }

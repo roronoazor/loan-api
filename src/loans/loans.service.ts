@@ -30,10 +30,10 @@ export class LoansService {
 
     async applyForLoan(dto: LoanDto, user: User){
 
-        // const activeLoans = await this.findOpenOrDisbursedLoans(user);
-        // if (activeLoans.length > 0){
-        //     throw new HttpException('Please repay all active loans before applying', HttpStatus.BAD_REQUEST);
-        // }
+        const activeLoans = await this.findOpenOrDisbursedLoans(user);
+        if (activeLoans.length > 0){
+            throw new HttpException('Please repay all active loans before applying', HttpStatus.BAD_REQUEST);
+        }
 
         const queryRunner = this.connection.createQueryRunner();
 
@@ -64,26 +64,12 @@ export class LoansService {
     
           await queryRunner.commitTransaction();
     
-        return { message: 'success', data : { loan : await this.appendLoanDetails(loan) } }
+        return { message: 'success', data : { loan } }
         } catch (err) {
           await queryRunner.rollbackTransaction();
           throw err;
         } finally {
           await queryRunner.release();
-        }
-    }
-
-    async appendLoanDetails(loan :Loan){
-        // Calculate repayment amount
-        const repaymentAmount = loan.amount * loan.interestRate;
-
-        // Calculate repayment date
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + loan.duration);
-        return {
-            ...loan,
-            repaymentAmount,
-            dueDate
         }
     }
 
@@ -104,8 +90,7 @@ export class LoansService {
             throw new HttpException('Not authorized', HttpStatus.BAD_REQUEST)
         }
 
-        const approvedLoan = await this.appendLoanDetails(loan);
-        return { message: 'success', data: { loan: approvedLoan } }
+        return { message: 'success', data: { loan } }
     }
 
     async repayLoan(loanId: string, paymentAmount: number, user: User) {

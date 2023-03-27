@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, UpdateDateColumn, CreateDateColumn } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { IdentificationTypeEnum } from '../enums';
@@ -34,14 +35,18 @@ export class UserProfile {
   identificationType: IdentificationTypeEnum;
   
   @Column()
+  @Exclude()
   createdBy: string;
 
+  @Exclude()
   @CreateDateColumn()
   createdOn: Date;
 
   @Column()
+  @Exclude()
   lastUpdatedBy: string;
 
+  @Exclude()
   @UpdateDateColumn()
   lastUpdatedOn: Date;
 
